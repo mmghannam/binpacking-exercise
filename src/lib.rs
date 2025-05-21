@@ -3,7 +3,10 @@ use russcip::{Constraint, VarId};
 
 pub mod ryanfoster;
 pub mod pricing;
-
+mod compact;
+mod knapsack;
+pub mod bnp;
+pub mod generator;
 
 pub struct PatternForVar(pub HashMap<VarId, Vec<usize>>);
 pub struct ItemToConstraint(pub Vec<Constraint>);

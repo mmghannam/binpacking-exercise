@@ -1,11 +1,16 @@
+# Branch-and-Price for Bin Packing in Rust
+
+This is an exercise following the practical [session](https://github.com/mmghannam/colgen2025/) of the school on column generation school 2025.
+The goal of this exercise is to implement a branch-and-price algorithm for the bin packing problem in Rust.
+
+
 ## Introduction
-Welcome to the practical session of the Column Generation School 2025! We will use the well-known [bin packing problem](https://en.wikipedia.org/wiki/Bin_packing_problem) as an example. Bin packing is a combinatorial optimization problem where a finite number of items of different sizes must be packed into bins or containers each with a fixed capacity. The goal is to minimize the number of bins used. The problem is NP-hard and has many applications in logistics and resource allocation.
+
+We will use the well-known [bin packing problem](https://en.wikipedia.org/wiki/Bin_packing_problem) as an example. Bin packing is a combinatorial optimization problem where a finite number of items of different sizes must be packed into bins or containers each with a fixed capacity. The goal is to minimize the number of bins used. The problem is NP-hard and has many applications in logistics and resource allocation.
 
 The first two sections will give a light overview of bin packing, both its compact and extended formulations. Implementation exercises start in section 3.
 
 If you try to run the branch-and-price code by running `cargo run`, you will encounter errors. This is because some code is missing and must be implemented by you. The error messages tell you what you should do. E.g.: "The knapsack solver is not implemented yet" implies that you should implement the knapsack solver.
-
-> Note: If you're not familiar with modeling languages and PySCIPOpt, you may want to take a look at the [`intro`](intro/README.md) and the [`modeling`](modeling/README.md) folders first.
 
 ## Section 1. Compact formulation: Modeling with assignments
 The bin packing problem is a classic optimization problem that asks:
@@ -31,7 +36,7 @@ This direct formulation of the bin-packing problem is famously not very good. So
 
 #### Exercise 0. Implementing the compact formulation
 
-**Your task**: Go to [`compact.py`](compact.py) and implement the formulation for bin packing presented above.
+**Your task**: Go to `compact.rs` and implement the formulation for bin packing presented above.
 
 ## Section 2. Extended Formulation: Modeling with Packings
 Next, we switch our perspective to the so-called "extended" formulation of the bin packing problem. Instead of modeling with assignments of items to bins we *extend* the formulation to look at all possible packings of items into bins. A packing is simply a subset of items that are packed into a bin (respecting its capacity). Using this concept of packings, we arrive at an equivalent formulation.
@@ -50,7 +55,7 @@ where $\mathcal{P}$ is the set of all possible packings of items into bins.
 
 Constraints (2) ensure that each item is packed into exactly one packing. The objective is to minimize the number of packings (bins) used.
 
-This formulation has one problem. The size of the problem grows exponentially with the number of items. Only instances with a very small number of items can be even loaded in memory. Therefore, we attempt to solve it using a branch-and-price algorithm. This formulation and the general structure required for solving this problem can be found in [bnp.py](bnp.py) (but again, it's missing some code snippets you must add).
+This formulation has one problem. The size of the problem grows exponentially with the number of items. Only instances with a very small number of items can be even loaded in memory. Therefore, we attempt to solve it using a branch-and-price algorithm. This formulation and the general structure required for solving this problem can be found in [main.rs](main.rs).
 
 ## Section 3. Branch-and-Price Algorithm
 In this section, we will first discuss how to solve the linear relaxation of the problem using column generation. Then, we will discuss how to handle branching decisions and infeasibility.
@@ -93,11 +98,10 @@ Running the test validates the correctness of the code of this particular exerci
 
 #### Exercise 1: Pricing
 
-**Your task:** Implement the knapsack pricing problem solver (by implementing a MIP) `solve_knapsack` in [`knapsack.py`](knapsack.py).
-To check if your implementation is correct, you can run the [`test_knapsack.py`](test_knapsack.py) file. Make sure to return a tuple where the first entry is the optimal solution value, and the second is a list containing the indices of the items that were chosen. 
+**Your task:** Implement the knapsack pricing problem solver (by implementing a MIP) `solve_knapsack` in [`knapsack.rs`](knapsack.rs).
+To check if your implementation is correct, you can run `cargo test knapsack`.
 
-SCIP can handle pricing internally with the `pricer` plugin. You can see the basic infrastructure in [`pricer.py`](pricer.py). The pricer gets the dual information from the RMP (with `getDualsolLinear`), feeds it into the pricing problem (`pricing_solver`), and decides whether to add the resulting column or not (when checking `if min_redcost < 0`). For the curious, you can see more details in [here](https://www.scipopt.org/doc/html/PRICER.php).
-
+SCIP can handle pricing internally with the `pricer` plugin. You can see the basic infrastructure in [`pricing.rs`](pricing.rs).
 
 ### 3.2 Branching
 
@@ -120,9 +124,6 @@ Let's compute the value of implicit pair variables $r_{ij}$ for all pairs of ite
 The value of $r_{ij}$ is the sum of the values of all packing variables $z_p$ that contain both items $i$ and $j$.
 From this, we can find a fractional pair of items, i.e., a pair of items $i$ and $j$ such that $r_{ij}$ is fractional.
 
-Let us look at the example used in [`test_fractional_pairs`](test_fractional_pairs.py). There are $3$ packings, $a$, $b$, and $c$, each valued at $0.5$ in the optimal LP solution. Packing $a$ contains items $0,1,2$, which means that the pairs of items to consider in this packing are ${(0,1), (0,2), (1,2)}$, and each appears $0.5$ times. Since pair $(1,2)$ otherwise only appears in packing $c$, this pair shows up $0.5+0.5=1$ times, and is thus not a fractional pair. However, since pairs $(0,1)$ and $(0,2)$ appear in all three patterns, they both sum up to $0.5+0.5+0.5=1.5$, a fractional value. So, in this solution, $(0,1)$ and $(0,2)$ are the fractional pairs.
-
-We then use one of these fractional pairs to create the branching constraints. For simplicity, we're choosing the first one. We then create two child nodes, one where the two items in the fractional pair must be together (in the same bin) and one where they must be apart (in different bins). See the diagram below for a visual understanding of this logic, where item pair (yellow, green) was identified as a fractional pair.
 
 <p align="center">
 <img src=https://i.imgur.com/lZDxWJO.png />
@@ -130,25 +131,18 @@ We then use one of these fractional pairs to create the branching constraints. F
 
 
 #### Exercise 2: Finding Fractional Pairs
-**Your task:** Go to `ryan_foster.py` and fill in the missing implementation of the `all_fractional_pairs` function.
-This function should return a list of all fractional pairs of items (see above for a definition of a fractional pair).
-You can test your implementation by running the [`test_fractional_pairs.py`](test_fractional_pairs.py) file.
+**Your task:** Go to `ryanfoster.rs` and fill in the missing todos.
 
-#### Exercise 3: Branching
-**Your task:** Fill in the missing pieces in [`ryan_foster.py`](ryan_foster.py) (marked with `?`) that save the branching decisions at the child nodes. Recall that the child nodes need to respect the branching decisions of the parent (saved at `parent_together` and `parent_apart`) and add the new pair (`chosen_pair`) either to the together set or to the apart set.
-
-#### Exercise 4: Handling Branching Decisions in Pricing
-**Your task:** Enforce the branching decisions in the pricing problem by implementing the `solve_knapsack_with_constraints` function in [`knapsack.py`](knapsack.py). You can start
-by copying the `solve_knapsack` function and modifying it by adding the necessary constraints. 
-Note that the apart and together constraints don't forbid both items from being absent from the packing.
-You can test your implementation by running the [`test_knapsack_with_constraints.py`](test_knapsack_with_constraints.py) file.
-
-The pricing problem does not have information regarding the branching decisions unless explicitly told. Using Ryan-Foster as an example, it might happen that the parent node decided that items $i_1, i_2$ must be kept apart, but the pricing problem does not know this and might generate a packing containing both items. To ensure proper branching, we need to force the prior branching decisions into the pricing problem.
-
+#### Exercise 3: Handling Branching Decisions in Pricing
+**Your task:** Handle the branching decisions input in `solve_knapsack()`.
 
 ### 3.3 Final step
 Now that we have implemented the pricing problem, the branching rule, and handled infeasibility, you have successfully implemented a full branch-and-price algorithm. Congrats!
-You can test your implementation by running the [`test_bnp.py`](test_bnp.py) file.
+
+You can now check if everything is correct by running
+```bash
+cargo test
+```
 
 ### 3.4 Improving vanilla Branch-and-Price
 There are many more tricks to make your Branch-and-Price code faster and more robust. The following is a collection of self-paced exercises that ask you to implement some of these tricks. You may complete them in any order you'd like.
