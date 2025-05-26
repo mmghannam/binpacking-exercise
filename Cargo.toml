@@ -4,5 +4,5 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-russcip = { git = "https://github.com/scipopt/russcip.git", branch = "bin-packing-example", features= ["bundled"] }
+russcip = { git = "https://github.com/scipopt/russcip.git", features= ["bundled"] }
 rand = "0.9.1"
