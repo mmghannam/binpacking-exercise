@@ -2,7 +2,7 @@
 
 This is an exercise following the practical [session](https://github.com/mmghannam/colgen2025/) of the school on column generation school 2025.
 The goal of this exercise is to implement a branch-and-price algorithm for the bin packing problem in Rust.
-
+An example solution to this exercise is available as an [example](https://github.com/scipopt/russcip/blob/main/examples/bin_packing.rs) on the [russcip](https://github.com/scipopt/russcip) repo.
 
 ## Introduction
 
